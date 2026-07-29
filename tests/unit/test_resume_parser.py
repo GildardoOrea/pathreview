@@ -143,6 +143,17 @@ class TestResumeParser:
         assert any("education" in s for s in sections_lower)
         assert any("skills" in s for s in sections_lower)
 
+    def test_detect_sections_with_leading_whitespace(self, parser):
+        """Issue #147: indented headers (from PDF extraction) must still be detected."""
+        text = (
+            "\n    John Smith\n    john@example.com\n\n"
+            "    Education:\n    - B.S. Computer Science\n\n"
+            "    Skills: Python\n"
+        )
+        sections = [s.lower() for s in parser._detect_sections(text)]
+        assert any("education" in s for s in sections)
+        assert any("skills" in s for s in sections)
+
     def test_strip_markdown_syntax(self, parser):
         """Test markdown syntax stripping."""
         markdown_text = """

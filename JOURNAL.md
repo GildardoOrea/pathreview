@@ -20,3 +20,18 @@ The resume parser uses the `_detect_sections()` function in `ingestion/parsers/r
 ### Selection notes — “Is this issue right for me?”
 
 I chose this issue because it is a Tier 1 problem with a clear scope and expected result. The issue appears to be limited to the resume section detection function and the regular expressions it uses to recognize section titles. It also includes examples of the failing input and identifies tests that can be used to confirm the solution. This makes the problem realistic for me to complete while still helping me practice reading an unfamiliar codebase, working with regular expressions, and testing a change.
+
+
+## Week 8 — Reproduction & solution planning
+
+**Reproduction commit link:** <PASTE COMMIT URL AFTER PUSHING — see instructions>
+
+**Reproduction summary:**
+I reproduced the issue by adding a unit test (`test_detect_sections_with_leading_whitespace` in `tests/unit/test_resume_parser.py`) that calls `_detect_sections()` with the issue's indented resume text — leading spaces before "Education:" and "Skills:". The test fails because the function returns an empty list, confirming the line-anchored regex patterns in `ingestion/parsers/resume_parser.py` don't match section headers when the line starts with whitespace.
+
+**PLAN.md link:** <PASTE PLAN.md URL AFTER PUSHING — see instructions>
+
+**Walkthrough video (recommended):** <optional — Loom link or leave blank, not graded>
+
+**Blockers or open questions:**
+Deciding whether to keep the `\n`-anchored patterns or collapse to the two `^`-anchored ones once `re.MULTILINE` makes them redundant — I'll finalize this in Week 9.
