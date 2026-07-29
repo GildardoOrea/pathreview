@@ -1,94 +1,71 @@
 ## Solution plan
 
-**Issue:** Resume section detection fails on text with leading whitespace —
+**Issue:** Resume section detection fails on text with leading whitespace  
 https://github.com/ascherj/pathreview/issues/147
 
 ### Understand
 
-`_detect_sections()` in `ingestion/parsers/resume_parser.py` builds regex patterns
-whose anchor (`^` or `\n`) is immediately followed by the section name, e.g.
-`rf"^{re.escape(section)}\s*[:|-]"`. Under `re.MULTILINE`, `^` matches the start of
-each line, but the header text must be the very first character of that line.
+The `_detect_sections()` function in `ingestion/parsers/resume_parser.py` uses regular expressions to identify resume sections such as Education, Skills, and Experience. The current patterns expect the section name to appear directly at the beginning of a line.
 
-- **Expected:** For indented text like `"\n    Education:\n    Skills: Python\n"`,
-  `detected_sections` contains `"Education"` and `"Skills"`.
-- **Actual:** PDF extraction preserves leading spaces/tabs, so the anchors never
-  reach the header word and `_detect_sections()` returns `[]`.
+The expected behavior is for the function to recognize section titles even when spaces or tabs appear before them. For example, resume text containing indented `Education:` and `Skills:` lines should return both sections.
 
-**Root cause:** there is no `\s*` (optional leading whitespace) between the line
-anchor and the section name in any of the four patterns.
+The actual behavior is that `_detect_sections()` returns an empty list because the spaces before the section names prevent the regular expressions from matching them.
+
+The root cause is that the current patterns do not allow optional whitespace between the beginning of the line and the section name.
 
 ### Map
 
+The main files involved are:
+
 - `ingestion/parsers/resume_parser.py`
-  - `SECTION_HEADERS` (set of recognized headers) — no change expected.
-  - `_detect_sections(self, text)` — **the only production change**: the `patterns`
-    list is where the anchors need to tolerate leading whitespace.
+  - `_detect_sections()` contains the regular expressions that need to be updated.
+  - `SECTION_HEADERS` contains the recognized section names, but I do not expect to change it.
+
 - `tests/unit/test_resume_parser.py`
-  - Add a new regression test for indented input.
-  - Referenced/affected tests to keep green: `test_detect_sections`,
-    `test_parse_single_column_resume_text`, `test_parse_resume_no_work_experience`.
+  - This file contains the existing tests for resume section detection.
+  - I added `test_detect_sections_with_leading_whitespace` to reproduce the issue.
+  - I will use the existing tests to make sure the fix does not break the current behavior.
 
 ### Plan
 
-1. **Lock in the reproduction as a test.** Add
-   `test_detect_sections_with_leading_whitespace` using the issue's indented input;
-   assert it currently returns `[]` (or simply assert the target sections and watch
-   it fail before the fix).
-2. **Relax the anchors.** In `_detect_sections()`, insert `\s*` after each line
-   anchor so headers are found regardless of indentation:
-   ```python
-   patterns = [
-       rf"^\s*{re.escape(section)}\s*$",
-       rf"^\s*{re.escape(section)}\s*[:|-]",
-       rf"\n\s*{re.escape(section)}\s*$",
-       rf"\n\s*{re.escape(section)}\s*[:|-]",
-   ]
-   ```
-3. **Decide on redundancy.** Because `re.MULTILINE` is set, `^\s*...` already covers
-   the `\n\s*...` cases. Either keep all four (minimal change) or collapse to the two
-   `^`-anchored patterns (simplification). Pick one and note the reasoning in the PR.
-4. **Run the full unit suite** (`pytest tests/unit/test_resume_parser.py`, or the
-   project's `make test`) and confirm the three referenced tests plus the new test
-   pass.
-5. **Guard against false positives.** Manually check that a body line such as
-   `"    Experience designing APIs"` is NOT mis-detected, and that overlapping
-   headers ("skills" vs "technical skills") aren't double-counted.
+1. Keep the new test that uses resume text with spaces before `Education:` and `Skills:`. The test should expect both sections to be detected and should fail before the fix is applied.
+
+2. Update the regex patterns inside `_detect_sections()` so they allow optional spaces or tabs before a section name.
+
+3. Review whether the patterns that begin with `\n` are still necessary. Since the function uses `re.MULTILINE`, the patterns beginning with `^` may already cover section titles at the beginning of every line.
+
+4. Run the tests in `tests/unit/test_resume_parser.py` and confirm that the new test and the existing resume parser tests pass.
+
+5. Test additional examples to make sure normal sentences containing words such as Experience or Skills are not incorrectly detected as section titles.
 
 ### Inputs & outputs
 
-- **Input:** `text: str` — raw extracted resume text that may contain leading spaces
-  or tabs on each line.
-- **Output:** `list[str]` — title-cased, de-duplicated section names
-  (`list(set(...))`). Signature and return type are unchanged.
-- **Behavioral change:** indented headers now detected; on the issue's example the
-  result must include `"Education"` and `"Skills"`.
+The input is a string containing text extracted from a resume. Some lines may begin with spaces or tabs because of the resume formatting or the way text was extracted from a PDF.
+
+The output is a list containing the section names found in the resume.
+
+The function signature and return type will not change. The behavior change is that indented section titles will now be recognized. For the example from the issue, the result should include `Education` and `Skills`.
 
 ### Risks & unknowns
 
-- **False positives (low):** adding `\s*` could match a section word that starts a
-  body line followed by a delimiter (e.g. an indented `"Summary: ..."` sentence). The
-  `[:|-]` / end-of-line requirements keep this narrow, but worth a manual check.
-- **Redundant `\n` patterns:** with `re.MULTILINE`, the `\n`-anchored patterns
-  duplicate the `^` ones. Leaving them is harmless; removing them is a simplification
-  I need to justify.
-- **Nondeterministic order:** `return list(set(detected))` has no stable order. Not
-  caused by this fix, but if any caller assumes order it could flake — grep
-  `detected_sections` / `_detect_sections` usages to confirm callers only test
-  membership.
-- **CRLF line endings:** real PDFs may produce `\r\n`. Need to confirm `\s*$` handles
-  a trailing `\r`.
-- **Unknown:** exact line numbers in my local copy vs. what I read from `main` — verify
-  against the actual file before editing.
+One possible risk is creating false matches. Allowing whitespace before a section title could cause a normal body line to be detected as a section if it begins with a recognized section name. The rest of the regular expression should reduce this risk by requiring a delimiter or the end of the line, but I still need to test it.
+
+I also need to decide whether to keep all four existing patterns or remove the two patterns that begin with `\n`. Keeping them would be a smaller change, while removing them could make the code simpler because `re.MULTILINE` allows `^` to match the beginning of each line.
+
+Another question is whether to use `\s*` or a pattern that only allows spaces and tabs. Since `\s` can also match line breaks, a more specific pattern such as `[ \t]*` may be safer. I will compare both options before making the final change.
 
 ### Edge cases
 
-- Leading spaces before a header (the issue's case) → detected.
-- Leading tabs, or mixed tabs/spaces → detected (`\s` covers both).
-- Blank lines between sections → detected.
-- Header appearing mid-sentence, e.g. `"My Experience at TechCorp"` → must NOT be
-  falsely detected.
-- Trailing spaces before the delimiter, e.g. `"Education   :"` → detected.
-- CRLF (`\r\n`) line endings → detected.
-- Empty string or a resume with no recognizable sections → returns `[]` gracefully
-  (unchanged behavior).
+The fix should correctly handle:
+
+- Section titles with leading spaces
+- Section titles with leading tabs
+- Section titles with both spaces and tabs
+- Section titles with trailing spaces
+- Section titles followed by a colon, vertical bar, or hyphen
+- Blank lines between resume sections
+- Windows line endings using `\r\n`
+- Empty resume text
+- Resume text with no recognized section titles
+
+The fix should not detect a section when the section word appears in the middle of a normal sentence, such as `My Experience at TechCorp`.
