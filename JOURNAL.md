@@ -24,12 +24,12 @@ I chose this issue because it is a Tier 1 problem with a clear scope and expecte
 
 ## Week 8 — Reproduction & solution planning
 
-**Reproduction commit link:** <PASTE COMMIT URL AFTER PUSHING — see instructions>
+**Reproduction commit link:** https://github.com/GildardoOrea/pathreview/commit/599df3e
 
 **Reproduction summary:**
 I reproduced the issue by adding a unit test (`test_detect_sections_with_leading_whitespace` in `tests/unit/test_resume_parser.py`) that calls `_detect_sections()` with the issue's indented resume text — leading spaces before "Education:" and "Skills:". The test fails because the function returns an empty list, confirming the line-anchored regex patterns in `ingestion/parsers/resume_parser.py` don't match section headers when the line starts with whitespace.
 
-**PLAN.md link:** <PASTE PLAN.md URL AFTER PUSHING — see instructions>
+**PLAN.md link:** https://github.com/GildardoOrea/pathreview/blob/fix/147-resume-section-leading-whitespace/PLAN.md
 
 **Walkthrough video (recommended):** <optional — Loom link or leave blank, not graded>
 
