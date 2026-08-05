@@ -53,7 +53,7 @@ The biggest blocker is that the repo already has a lot of failing tests and lint
 
 ### Check-in 2 (end of week)
 
-**PR link:** <PASTE YOUR PR URL HERE AFTER OPENING IT>
+**PR link:** https://github.com/ascherj/pathreview/pull/921
 
 **Branch:** `fix/147-resume-section-leading-whitespace`
 
