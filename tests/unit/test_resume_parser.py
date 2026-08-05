@@ -154,6 +154,19 @@ class TestResumeParser:
         assert any("education" in s for s in sections)
         assert any("skills" in s for s in sections)
 
+    def test_detect_sections_tab_indented(self, parser):
+        """Issue #147: tab-indented headers are detected too."""
+        text = "\n\tEducation:\n\t- B.S. Computer Science\n\n\tSkills: Python\n"
+        sections = [s.lower() for s in parser._detect_sections(text)]
+        assert any("education" in s for s in sections)
+        assert any("skills" in s for s in sections)
+
+    def test_detect_sections_ignores_header_word_mid_sentence(self, parser):
+        """Issue #147: the fix must not misdetect a section word inside a sentence."""
+        text = "My experience at TechCorp was great and I built many skills there.\n"
+        sections = [s.lower() for s in parser._detect_sections(text)]
+        assert not any("experience" in s for s in sections)
+
     def test_strip_markdown_syntax(self, parser):
         """Test markdown syntax stripping."""
         markdown_text = """
