@@ -40,23 +40,23 @@ The main files involved are:
 
 ### Inputs & outputs
 
-The input is a string containing text extracted from a resume. Some lines may begin with spaces or tabs because of the resume formatting or the way text was extracted from a PDF.
+The input is a string of resume text. Some of the lines might start with spaces or tabs, either because the original resume was formatted that way or because the text came from a PDF and kept extra indentation.
 
-The output is a list containing the section names found in the resume.
+The output is the list of section names the parser finds.
 
-The function signature and return type will not change. The behavior change is that indented section titles will now be recognized. For the example from the issue, the result should include `Education` and `Skills`.
+I am not changing the function signature or return type. The only behavior change should be that indented section titles are now recognized. For the example from the issue, the result should include `Education` and `Skills`.
 
 ### Risks & unknowns
 
-One possible risk is creating false matches. Allowing whitespace before a section title could cause a normal body line to be detected as a section if it begins with a recognized section name. The rest of the regular expression should reduce this risk by requiring a delimiter or the end of the line, but I still need to test it.
+The main risk is accidentally creating false matches. If I make the regex too loose, a normal sentence could get treated as a section header just because it starts with a word like Experience or Skills. The rest of the pattern should help because it still requires a delimiter or the end of the line, but I want a test for that so I am not just assuming it works.
 
-I also need to decide whether to keep all four existing patterns or remove the two patterns that begin with `\n`. Keeping them would be a smaller change, while removing them could make the code simpler because `re.MULTILINE` allows `^` to match the beginning of each line.
+I also need to decide whether the two patterns that start with `\n` are still worth keeping. Leaving them in would be the smallest change, but removing them may make the code easier to read because `re.MULTILINE` already lets `^` match the beginning of each line.
 
-Another question is whether to use `\s*` or a pattern that only allows spaces and tabs. Since `\s` can also match line breaks, a more specific pattern such as `[ \t]*` may be safer. I will compare both options before making the final change.
+Another choice is whether to use `\s*` or something more specific like `[ \t]*`. I am leaning toward `[ \t]*` because `\s` can also match line breaks, and I do not want the fix to be broader than it needs to be.
 
 ### Edge cases
 
-The fix should correctly handle:
+I want the fix to handle:
 
 - Section titles with leading spaces
 - Section titles with leading tabs
@@ -68,4 +68,4 @@ The fix should correctly handle:
 - Empty resume text
 - Resume text with no recognized section titles
 
-The fix should not detect a section when the section word appears in the middle of a normal sentence, such as `My Experience at TechCorp`.
+It should not detect a section when the section word is only part of a normal sentence, such as `My Experience at TechCorp`.

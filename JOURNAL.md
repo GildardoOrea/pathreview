@@ -41,13 +41,13 @@ I am still deciding whether I should keep the existing patterns that use `\n` or
 ### Check-in 1 (mid-week)
 
 **Current progress:**
-I implemented the fix in `_detect_sections()` in `ingestion/parsers/resume_parser.py`. I added `[ \t]*` after the `^` line anchor so section headers are detected even when the line begins with spaces or tabs, and I removed the two `\n`-anchored patterns because `re.MULTILINE` already makes `^` match the start of every line (this resolved the open question from Week 8). From my PLAN.md, the Understand, Map, and Plan sub-tasks are done, and I updated the function's docstring.
+I made the main fix in `_detect_sections()` in `ingestion/parsers/resume_parser.py`. The parser now allows spaces or tabs before a section header, so lines like `Education:` and `Skills:` still get picked up even if the resume text is indented. I also removed the two `\n`-based patterns after checking that `re.MULTILINE` already lets `^` match the start of each line. That answered the question I left myself in Week 8. From my PLAN.md, I have finished the Understand, Map, and Plan pieces, and I updated the function docstring so the change is clearer.
 
 **Next steps:**
-Add tests for tab-indented headers and for the false-positive case (a section word inside a normal sentence), run `make check` and `make test-unit`, then open the PR against upstream and fill in the template.
+My next step is to add a couple more tests before I call it done: one for tab-indented headers and one to make sure words like Experience or Skills do not get counted when they are just part of a normal sentence. After that I need to run `make check` and `make test-unit`, open the PR against the upstream repo, and fill out the PR template carefully.
 
 **Blockers:**
-The repository has many pre-existing failing tests and lint/type errors unrelated to my issue. I recorded the baseline before making changes so I can show my change introduces no new failures.
+The biggest blocker is that the repo already has a lot of failing tests and lint/type errors that are not related to my issue. I ran the checks before changing anything and saved that baseline, so I can explain clearly that my change did not add new failures.
 
 ---
 
@@ -58,12 +58,12 @@ The repository has many pre-existing failing tests and lint/type errors unrelate
 **Branch:** `fix/147-resume-section-leading-whitespace`
 
 **What you built:**
-A fix to resume section detection so that section headers (Education, Skills, Experience, etc.) are recognized even when the text has leading whitespace, which commonly happens with PDF-extracted resumes. The fix allows optional spaces/tabs after the line anchor in the detection regexes and removes now-redundant patterns.
+I fixed resume section detection so headers like Education, Skills, and Experience are still recognized when the text has leading whitespace. That matters because text copied or extracted from PDFs often keeps odd indentation. The fix lets the regex accept spaces or tabs at the start of a section line and removes the older patterns that were doing the same job less cleanly.
 
 **Tests added or updated:**
-`tests/unit/test_resume_parser.py` — added `test_detect_sections_tab_indented` (tab-indented headers) and `test_detect_sections_ignores_header_word_mid_sentence` (guards against false positives), in addition to the Week 8 reproduction test `test_detect_sections_with_leading_whitespace`. My change also turned the previously failing `test_detect_sections`, `test_parse_single_column_resume_text`, and `test_parse_resume_no_work_experience` green.
+`tests/unit/test_resume_parser.py` — I added `test_detect_sections_tab_indented` for tab-indented headers and `test_detect_sections_ignores_header_word_mid_sentence` to make sure regular sentences do not get treated like section titles. I also kept the Week 8 reproduction test, `test_detect_sections_with_leading_whitespace`. With the fix, the older tests `test_detect_sections`, `test_parse_single_column_resume_text`, and `test_parse_resume_no_work_experience` now pass too.
 
 **Self-review confirmation:** [x] make check passes  [x] make test-unit passes
-(This codebase has documented pre-existing failures — baseline was 54 failing unit tests, plus pre-existing ruff/mypy/black issues. After my change the suite is 50 failing / 381 passing: my change fixes 4 tests and introduces zero new failures, lint, type, or formatting errors in the files I touched.)
+(The repo already had documented failures before I started: 54 failing unit tests, plus existing ruff, mypy, and black issues. After my change, the suite is 50 failing / 381 passing. My change fixes 4 tests and does not introduce new test, lint, type, or formatting failures in the files I touched.)
 
 **Draft PR feedback received from:** none
