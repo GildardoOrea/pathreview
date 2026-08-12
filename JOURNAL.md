@@ -35,19 +35,18 @@ I reproduced the issue by adding a unit test called `test_detect_sections_with_l
 **Blockers or open questions:**  
 I am still deciding whether I should keep the existing patterns that use `\n` or simplify the list to only use the `^` patterns with `re.MULTILINE`, since they may become redundant. I plan to compare both approaches and make the final decision during Week 9.
 
-
 ## Week 9 — Solution building & PR submission
 
 ### Check-in 1 (mid-week)
 
-**Current progress:**
-I made the main fix in `_detect_sections()` in `ingestion/parsers/resume_parser.py`. The parser now allows spaces or tabs before a section header, so lines like `Education:` and `Skills:` still get picked up even if the resume text is indented. I also removed the two `\n`-based patterns after checking that `re.MULTILINE` already lets `^` match the start of each line. That answered the question I left myself in Week 8. From my PLAN.md, I have finished the Understand, Map, and Plan pieces, and I updated the function docstring so the change is clearer.
+**Current progress:**  
+I made the main change in `_detect_sections()` inside `ingestion/parsers/resume_parser.py`. The parser now allows spaces or tabs before a section header, so sections like `Education:` and `Skills:` can still be detected when the resume text is indented. I also removed the two `\n` patterns after confirming that `re.MULTILINE` already allows `^` to match the beginning of every line. This answered the question I had left open in Week 8. I also updated the function docstring so the behavior is a little clearer.
 
-**Next steps:**
-My next step is to add a couple more tests before I call it done: one for tab-indented headers and one to make sure words like Experience or Skills do not get counted when they are just part of a normal sentence. After that I need to run `make check` and `make test-unit`, open the PR against the upstream repo, and fill out the PR template carefully.
+**Next steps:**  
+My next step is to add a couple more tests before finishing the fix. I want one test for tab-indented headers and another to make sure words like Experience or Skills are not detected when they are only part of a regular sentence. After that, I need to run `make check` and `make test-unit`, review the results against the baseline I recorded before making changes, open the PR against the upstream repository, and complete the PR template.
 
-**Blockers:**
-The biggest blocker is that the repo already has a lot of failing tests and lint/type errors that are not related to my issue. I ran the checks before changing anything and saved that baseline, so I can explain clearly that my change did not add new failures.
+**Blockers:**  
+The biggest blocker is that the repository already had a large number of failing tests and lint/type-checking issues before I started working on this issue. I saved the original results before making my changes, so I can compare them and make sure my fix does not introduce any new failures.
 
 ---
 
@@ -57,17 +56,17 @@ The biggest blocker is that the repo already has a lot of failing tests and lint
 
 **Branch:** `fix/147-resume-section-leading-whitespace`
 
-**What you built:**
-I fixed resume section detection so headers like Education, Skills, and Experience are still recognized when the text has leading whitespace. That matters because text copied or extracted from PDFs often keeps odd indentation. The fix lets the regex accept spaces or tabs at the start of a section line and removes the older patterns that were doing the same job less cleanly.
+**What you built:**  
+I fixed the resume section detection so headers like Education, Skills, and Experience can still be recognized when there are spaces or tabs before them. This is important because text copied or extracted from PDFs can keep extra indentation. The fix updates the regex so it accepts leading spaces or tabs and removes the older `\n` patterns because `re.MULTILINE` already handles the beginning of each line.
 
-**Tests added or updated:**
-`tests/unit/test_resume_parser.py` — I added `test_detect_sections_tab_indented` for tab-indented headers and `test_detect_sections_ignores_header_word_mid_sentence` to make sure regular sentences do not get treated like section titles. I also kept the Week 8 reproduction test, `test_detect_sections_with_leading_whitespace`. With the fix, the older tests `test_detect_sections`, `test_parse_single_column_resume_text`, and `test_parse_resume_no_work_experience` now pass too.
+**Tests added or updated:**  
+In `tests/unit/test_resume_parser.py`, I added `test_detect_sections_tab_indented` to check tab-indented headers and `test_detect_sections_ignores_header_word_mid_sentence` to make sure normal sentences are not treated as section titles. I also kept the Week 8 reproduction test, `test_detect_sections_with_leading_whitespace`. After the fix, the existing tests `test_detect_sections`, `test_parse_single_column_resume_text`, and `test_parse_resume_no_work_experience` also pass.
 
-**Self-review confirmation:** [x] make check passes  [x] make test-unit passes
-(The repo already had documented failures before I started: 54 failing unit tests, plus existing ruff, mypy, and black issues. After my change, the suite is 50 failing / 381 passing. My change fixes 4 tests and does not introduce new test, lint, type, or formatting failures in the files I touched.)
+**Self-review confirmation:** [ ] make check passes  [ ] make test-unit passes
+
+The repository already had documented failures before I started. My baseline had 54 failing unit tests, along with existing ruff, mypy, and black issues. After my change, the unit test results were 50 failing and 381 passing. My fix corrected four previously failing tests and did not introduce new test, lint, type, or formatting problems in the files I changed.
 
 **Draft PR feedback received from:** none
-
 
 ## Week 10 — Iteration & reflection
 
@@ -75,56 +74,27 @@ I fixed resume section detection so headers like Education, Skills, and Experien
 
 **Feedback received:** [ ] Yes  [x] No — still awaiting review
 
-**Summary of feedback:**
-No reviewer or maintainer feedback came in on PR #921. (Reviewer feedback is not
-a feature this term, so this is expected.)
+**Summary of feedback:**  
+I have not received any reviewer or maintainer feedback on PR #921 yet. Since reviewer feedback is not required for this part of the course, I am leaving the PR open while I wait.
 
-**How you responded:**
-No changes were required. I kept the PR open and my branch up to date.
+**How you responded:**  
+There was no feedback to respond to, so I did not need to make any additional changes. I kept the PR open and made sure my branch stayed up to date.
 
 ---
 
 ### Reflection
 
-**What was harder than you expected?**
-The actual code change was tiny — a few characters added to one regex in
-`_detect_sections()` — but almost everything around it took longer. The hardest
-part was telling apart the failures I caused from the ones that were already in the
-repo. When I first ran the tests there were 54 failures, and my instinct was that I
-had broken something. Learning to record a baseline first, and to reason about
-"did my change make it worse?" instead of "is everything green?", was harder than
-writing the fix.
+**What was harder than you expected?**  
+The actual code change was pretty small, but everything around it took more time than I expected. The hardest part was figuring out which test failures were related to my work and which ones were already in the repository. When I first ran the tests and saw 54 failures, I thought I had done something wrong. Recording the baseline before making changes helped me understand that the important question was whether my change introduced anything new, not whether the entire repository suddenly became perfect.
 
-**What did you learn about working in a large codebase?**
-You read a lot more code than you write. My change was about three lines, but I
-spent most of the time understanding how the section-detection regex used `^` with
-`re.MULTILINE`, and making sure I matched the project's conventions — Conventional
-Commit messages, the pull request template, and the existing test style in
-`tests/unit/`. On my own projects I can do whatever works; on someone else's
-production code the fix also has to fit their patterns and not regress the rest of
-the suite. The fork → branch → pull-request-against-upstream workflow, and getting
-the base repository right, was also new to me.
+**What did you learn about working in a large codebase?**  
+I learned that you spend a lot more time reading and understanding code than actually changing it. My fix only needed a small change, but I had to understand how `_detect_sections()` worked, how `^` behaves with `re.MULTILINE`, how the existing tests were written, and how the project expected commits and pull requests to be structured. On my own projects, I can usually choose whatever approach I want. In someone else's codebase, I also have to make sure my change fits the way the project is already organized and does not cause problems somewhere else. I also got more practice working with a fork, creating a branch, and opening a pull request against the upstream repository.
 
-**How did AI tools help — and where did they fall short?**
-AI was most useful for orienting quickly: finding where sections were detected,
-explaining what the regex was doing, and drafting the plan, tests, and PR
-description. Where it fell short: at one point it produced a test that was indented
-at the wrong level (a loose function instead of a class method), which would have
-broken test collection — I caught that while reviewing before committing. It also
-made claims about the code that I had to verify against the actual file, and
-"it works" only counted once I ran `make test-unit` myself. AI sped up the typing,
-but I still had to read the diff like a reviewer and run everything.
+**How did AI tools help — and where did they fall short?**  
+AI helped me the most when I was first trying to understand the codebase. It helped me find where the section detection was happening, understand what the regex was doing, and organize my plan and tests. At the same time, I could not just trust everything it generated. At one point, it created a test with the wrong indentation, which would have placed the test outside the class. I caught that while reviewing the code before committing it. There were also times when it made assumptions about the code that I had to check against the actual files. It helped me move faster, but I still had to read the code myself, check the diff, and run the tests to know whether the solution actually worked.
 
-**What would you do differently if you started over?**
-I would set up the environment and run the baseline checks on day one instead of
-close to the deadline, and get comfortable with the git and PR workflow earlier so
-the final submission was not rushed. I would also read generated code more carefully
-before committing it — the wrong-indentation test would have cost me time if I had
-not caught it.
+**What would you do differently if you started over?**  
+I would set up the environment and run the baseline checks much earlier instead of waiting until I was closer to the deadline. I would also spend more time getting comfortable with the Git and pull request workflow at the beginning so I would not have to figure out those steps while trying to finish the assignment. I would also review generated code more carefully before committing it, especially tests, because small mistakes like incorrect indentation can create completely different problems.
 
-**What are you most proud of from this module?**
-Shipping a real, well-scoped pull request into an unfamiliar production codebase —
-with tests and a clear description — and being able to prove my change fixed four
-previously-failing tests without adding any new failures, in a repo that was already
-full of pre-existing breakage. Keeping the change small and focused instead of
-trying to "fix everything" is the part I'm happiest with.
+**What are you most proud of from this module?**  
+I am most proud that I was able to take a real issue in a codebase I had never worked with before, understand what was causing it, make a focused fix, add tests, and open a real pull request. I was also able to show that my change fixed four tests without adding new problems, even though the repository already had a lot of existing failures. I think keeping the fix focused on the issue instead of trying to fix everything else was one of the most important things I learned from this module.
