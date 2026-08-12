@@ -67,3 +67,64 @@ I fixed resume section detection so headers like Education, Skills, and Experien
 (The repo already had documented failures before I started: 54 failing unit tests, plus existing ruff, mypy, and black issues. After my change, the suite is 50 failing / 381 passing. My change fixes 4 tests and does not introduce new test, lint, type, or formatting failures in the files I touched.)
 
 **Draft PR feedback received from:** none
+
+
+## Week 10 — Iteration & reflection
+
+### Reviewer feedback
+
+**Feedback received:** [ ] Yes  [x] No — still awaiting review
+
+**Summary of feedback:**
+No reviewer or maintainer feedback came in on PR #921. (Reviewer feedback is not
+a feature this term, so this is expected.)
+
+**How you responded:**
+No changes were required. I kept the PR open and my branch up to date.
+
+---
+
+### Reflection
+
+**What was harder than you expected?**
+The actual code change was tiny — a few characters added to one regex in
+`_detect_sections()` — but almost everything around it took longer. The hardest
+part was telling apart the failures I caused from the ones that were already in the
+repo. When I first ran the tests there were 54 failures, and my instinct was that I
+had broken something. Learning to record a baseline first, and to reason about
+"did my change make it worse?" instead of "is everything green?", was harder than
+writing the fix.
+
+**What did you learn about working in a large codebase?**
+You read a lot more code than you write. My change was about three lines, but I
+spent most of the time understanding how the section-detection regex used `^` with
+`re.MULTILINE`, and making sure I matched the project's conventions — Conventional
+Commit messages, the pull request template, and the existing test style in
+`tests/unit/`. On my own projects I can do whatever works; on someone else's
+production code the fix also has to fit their patterns and not regress the rest of
+the suite. The fork → branch → pull-request-against-upstream workflow, and getting
+the base repository right, was also new to me.
+
+**How did AI tools help — and where did they fall short?**
+AI was most useful for orienting quickly: finding where sections were detected,
+explaining what the regex was doing, and drafting the plan, tests, and PR
+description. Where it fell short: at one point it produced a test that was indented
+at the wrong level (a loose function instead of a class method), which would have
+broken test collection — I caught that while reviewing before committing. It also
+made claims about the code that I had to verify against the actual file, and
+"it works" only counted once I ran `make test-unit` myself. AI sped up the typing,
+but I still had to read the diff like a reviewer and run everything.
+
+**What would you do differently if you started over?**
+I would set up the environment and run the baseline checks on day one instead of
+close to the deadline, and get comfortable with the git and PR workflow earlier so
+the final submission was not rushed. I would also read generated code more carefully
+before committing it — the wrong-indentation test would have cost me time if I had
+not caught it.
+
+**What are you most proud of from this module?**
+Shipping a real, well-scoped pull request into an unfamiliar production codebase —
+with tests and a clear description — and being able to prove my change fixed four
+previously-failing tests without adding any new failures, in a repo that was already
+full of pre-existing breakage. Keeping the change small and focused instead of
+trying to "fix everything" is the part I'm happiest with.
